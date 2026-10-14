@@ -1,0 +1,12 @@
+# never upload these
+venv/
+__pycache__/
+*.pyc
+# the raw dataset and the big cleaned file are NOT needed online
+*.xlsx
+*.xls
+online_retail*.csv
+clean_online_retail.csv
+.DS_Store
+Thumbs.db
+.streamlit/secrets.toml
