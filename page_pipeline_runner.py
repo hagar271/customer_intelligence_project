@@ -1,7 +1,7 @@
 """Page 6 - Prepare result artifacts for the dashboard.
 
-The deployed app does not need the original Excel dataset if the precomputed
-result files and saved model are committed under the artifacts/ directory.
+The deployed app does not need the original Excel dataset if precomputed
+result files and the saved model are committed in the project root or artifacts/.
 This page still allows an upload-based rebuild as a fallback.
 """
 import streamlit as st
@@ -16,26 +16,26 @@ def render():
     missing = data_loader.missing_required()
     if missing:
         st.warning(
-            "The dashboard's required result/model files are not present in this GitHub revision. "
-            "The Python source code alone cannot reproduce the real charts or predictions. "
+            "The required result/model files are not present in this GitHub revision. "
+            "Source code alone cannot reproduce the real charts or predictions. "
             "To deploy without uploading the original dataset, run the pipeline on your own computer, "
-            "then commit the required generated files listed below into the repository's artifacts/ folder."
+            "then commit the generated files listed below into the project root or artifacts/ folder."
         )
         st.markdown("**Required deployment files**")
         st.code(
-            "artifacts/rfm_kmeans_customers.csv\n"
-            "artifacts/churn_model_pipeline.joblib\n"
-            "artifacts/churn_model_meta.json\n"
-            "artifacts/churn_scores_current_customers.csv\n"
-            "artifacts/sales_kpis.json\n"
-            "artifacts/sales_monthly.csv\n"
-            "artifacts/sales_products.csv\n"
-            "artifacts/sales_countries.csv",
+            "rfm_kmeans_customers.csv\n"
+            "churn_model_pipeline.joblib\n"
+            "churn_model_meta.json\n"
+            "churn_scores_current_customers.csv\n"
+            "sales_kpis.json\n"
+            "sales_monthly.csv\n"
+            "sales_products.csv\n"
+            "sales_countries.csv",
             language="text",
         )
         st.caption(
             "Do not upload online_retail_II.xlsx or clean_online_retail.csv to a public repository. "
-            "The files above should contain only the precomputed outputs needed by the dashboard."
+            "The files above are precomputed outputs needed by the dashboard."
         )
         st.write("Files currently missing:")
         st.code("\n".join(f"- {name}" for name in missing), language="text")
@@ -54,12 +54,12 @@ def render():
             help="Use this only if you intentionally want to rebuild the pipeline in the running app.",
         )
 
-        with st.expander("Advanced settings"):
-            c1, c2 = st.columns(2)
-            horizon = c1.select_slider("Churn horizon (days)", options=[60, 90, 120], value=90)
-            snapshots = c2.slider("Training snapshots", 1, 6, 4)
-            fast = st.checkbox("Fast mode (smaller tuning grids)", value=True)
-            use_xgb = st.checkbox("Include XGBoost (optional model)", value=True)
+        st.markdown("**Advanced settings**")
+        c1, c2 = st.columns(2)
+        horizon = c1.select_slider("Churn horizon (days)", options=[60, 90, 120], value=90)
+        snapshots = c2.slider("Training snapshots", 1, 6, 4)
+        fast = st.checkbox("Fast mode (smaller tuning grids)", value=True)
+        use_xgb = st.checkbox("Include XGBoost (optional model)", value=True)
 
         run = st.button("🚀 Run the full pipeline", type="primary", disabled=uploaded is None)
         if uploaded is None:
