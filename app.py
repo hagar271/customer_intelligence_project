@@ -1,7 +1,7 @@
 """Customer Intelligence System - Streamlit dashboard.
 
-When generated model/result artifacts are absent, the Overview page shows a clearly
-labelled demo preview. The Pipeline & Deployment page is intentionally not in navigation.
+If generated artifacts are absent, every main dashboard page displays a clearly labelled
+presentation preview instead of an artifact-missing error. No raw dataset upload is needed.
 """
 import streamlit as st
 
@@ -25,14 +25,19 @@ PAGES = {
 }
 
 
-def sidebar(missing):
+def main():
+    inject_css()
+    missing = data_loader.missing_required()
     st.sidebar.title("Customer Intelligence")
     st.sidebar.caption("Online Retail II")
     page = st.sidebar.radio("Navigate", list(PAGES.keys()), index=0, key="nav",
                             label_visibility="collapsed")
+
     with st.sidebar.expander("System check (files & versions)"):
         st.dataframe(data_loader.artifact_status(), hide_index=True)
-        if data_loader.exists("churn_meta"):
+        if missing:
+            st.caption("Generated model/result files are missing. Dashboard pages are currently in demo-preview mode.")
+        elif data_loader.exists("churn_meta"):
             try:
                 import sklearn
                 trained_with = data_loader.load_meta().get("sklearn_version")
@@ -43,24 +48,16 @@ def sidebar(missing):
                     )
             except Exception:
                 pass
-        if missing:
-            st.caption("Generated result/model files are missing. Overview will show a demo preview.")
-    return page
 
-
-def main():
-    inject_css()
-    missing = data_loader.missing_required()
-    page = sidebar(missing)
+    if missing:
+        demo_dashboard.render(page)
+        return
 
     try:
-        if missing and page == "📊 Overview":
-            demo_dashboard.render()
-        else:
-            PAGES[page]()
+        PAGES[page]()
     except data_loader.ArtifactError as e:
-        st.warning(f"This page needs generated project result files that are not currently available. {e}")
-        st.info("The Overview page still provides a dashboard preview without requiring the original dataset.")
+        st.warning(f"Required generated project files are unavailable: {e}")
+        st.info("Overview and the other pages can still be viewed in demo-preview mode if project artifacts are removed.")
     except Exception as e:
         st.error(f"Something went wrong while building this page: {e}")
         with st.expander("Technical details"):
