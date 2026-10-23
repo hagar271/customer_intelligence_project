@@ -74,18 +74,60 @@ def render(page="📊 Overview"):
         st.dataframe(cm, use_container_width=True)
 
     elif page == "🎯 Customer Prediction":
-        st.subheader("Customer churn risk preview")
-        st.write("This interactive example demonstrates the intended prediction interface. It does not call a trained model.")
+        st.subheader("Predict customer churn risk")
+        st.write("Enter customer behavior details below. The current artifact-free preview demonstrates the old input form, but does not use a trained model.")
+        preset = st.selectbox("Start from an example", ["Typical customer", "Loyal, active customer", "Slipping away", "New one-time buyer"])
+        examples = {
+            "Typical customer": {"recency": 60, "frequency": 3, "monetary": 800.0, "items": 300, "unique": 40, "tenure": 250, "avg_days": 60.0, "orders90": 0, "one_day": False},
+            "Loyal, active customer": {"recency": 12, "frequency": 14, "monetary": 5200.0, "items": 3800, "unique": 160, "tenure": 600, "avg_days": 38.0, "orders90": 3, "one_day": False},
+            "Slipping away": {"recency": 130, "frequency": 5, "monetary": 1100.0, "items": 650, "unique": 70, "tenure": 520, "avg_days": 85.0, "orders90": 0, "one_day": False},
+            "New one-time buyer": {"recency": 25, "frequency": 1, "monetary": 180.0, "items": 90, "unique": 25, "tenure": 25, "avg_days": 0.0, "orders90": 1, "one_day": True},
+        }
+        v = examples[preset]
         with st.form("demo_customer_form"):
-            recency = st.slider("Recency (days since last order)", 0, 365, 90)
-            frequency = st.slider("Number of orders", 1, 100, 5)
-            monetary = st.number_input("Total spend (£)", min_value=0.0, value=500.0, step=50.0)
-            submitted = st.form_submit_button("Estimate example risk")
+            a,b,c = st.columns(3)
+            recency = a.number_input("Recency (days since last purchase)", 0, 1000, v["recency"])
+            frequency = b.number_input("Frequency (number of orders)", 1, 5000, v["frequency"])
+            monetary = c.number_input("Monetary (total spent, £)", min_value=0.01, max_value=10000000.0, value=v["monetary"])
+            d,e,f = st.columns(3)
+            items = d.number_input("Total items purchased", 1, 10000000, v["items"])
+            unique = e.number_input("Distinct products purchased", 1, 10000, v["unique"])
+            tenure = f.number_input("Tenure (days since first purchase)", 0, 1000, v["tenure"])
+            g,h,i = st.columns(3)
+            orders90 = g.number_input("Orders in the last 90 days", 0, 5000, v["orders90"])
+            avg_days = h.number_input("Average days between purchases", 0.0, 1000.0, v["avg_days"])
+            one_day = i.checkbox("Bought on a single day only", value=v["one_day"])
+            submitted = st.form_submit_button("Predict churn", type="primary")
         if submitted:
-            score = min(.95, max(.05, .15 + recency/500 - frequency/250 - monetary/10000))
-            cols=st.columns(2)
-            cols[0].metric("Illustrative churn risk", f"{score:.0%}")
-            cols[1].metric("Risk category", "High" if score >= .65 else "Medium" if score >= .4 else "Low")
-            st.caption("Illustrative calculation only — not a trained machine-learning prediction.")
+            errors = []
+            if tenure < recency:
+                errors.append("Tenure cannot be smaller than Recency.")
+            if orders90 > frequency:
+                errors.append("Orders in the last 90 days cannot exceed total orders.")
+            if recency >= 90 and orders90 > 0:
+                errors.append("Recency is 90+ days, so orders in the last 90 days must be zero.")
+            if items < unique:
+                errors.append("Total items cannot be smaller than distinct products.")
+            one_time = bool(one_day or frequency == 1)
+            if not one_time and avg_days > tenure:
+                errors.append("Average days between purchases cannot exceed tenure.")
+            if errors:
+                for error in errors:
+                    st.error(error)
+            else:
+                score = min(.95, max(.05, .15 + recency/500 - frequency/250 - monetary/10000))
+                cols = st.columns(3)
+                cols[0].metric("Illustrative churn risk", f"{score:.0%}")
+                cols[1].metric("Risk category", "High" if score >= .65 else "Medium" if score >= .4 else "Low")
+                cols[2].metric("Average order value", f"£{monetary/frequency:,.2f}")
+                st.caption("This is an illustrative calculation only, not a trained machine-learning prediction.")
+                st.write("**Submitted features**")
+                st.dataframe(pd.DataFrame([{
+                    "Recency": recency, "Frequency": frequency, "Monetary": monetary,
+                    "Average order value": monetary/frequency, "Total items": items,
+                    "Distinct products": unique, "Tenure days": tenure,
+                    "Average days between purchases": avg_days, "Orders last 90 days": orders90,
+                    "One-time buyer": one_time,
+                }]), hide_index=True, use_container_width=True)
 
     st.caption("To show authentic project results, the precomputed outputs and trained model must be available. The original Excel file does not need to be deployed.")
