@@ -1,35 +1,48 @@
 # Customer Intelligence System — Streamlit dashboard
 
-One flat folder (no sub-folders), so it uploads to GitHub in one go.
+This repository contains the dashboard source code. **The original Online Retail II dataset is not required by the deployed app when the precomputed result files and saved models are included.** The source-code-only repository does not contain those result/model files yet, so the dashboard will show a deployment checklist until they are added.
 
-## 3 steps
-1. **Build the results (once).** Double-click `build_results.bat`, choose `online_retail_II.xlsx` when the window asks.
-   It installs the libraries, builds every result file next to `app.py`, and pins the scikit-learn version in `requirements.txt`.
-2. **Check locally (optional).** Double-click `run_app.bat` → the dashboard opens in your browser.
-3. **Publish.** Double-click `publish_to_github.bat` (needs Git) and paste the address of a NEW EMPTY GitHub repository.
-   Everything is uploaded in one go. The raw dataset and any huge file are skipped automatically (`.gitignore`).
+## Recommended deployment (keep the original dataset off GitHub)
 
-Then go to https://share.streamlit.io → **Create app** → pick the repository, branch `main`, main file `app.py` → **Deploy**.
+1. On your own computer, place the original `online_retail_II.xlsx` beside `build_results.bat`.
+2. Run `build_results.bat` and wait for the pipeline to finish. This generates the result tables and trained model files locally.
+3. Run `run_app.bat` and confirm the dashboard works locally.
+4. Upload the generated **result/model files only** to this repository, either in the project root or in an `artifacts/` folder. Do **not** upload `online_retail_II.xlsx` or `clean_online_retail.csv`.
+5. In Streamlit Community Cloud, deploy this repository using branch `main` and main file `app.py`. If it is already deployed, restart/reboot the app after committing the generated files.
 
-> No Git? Upload every file in this folder to GitHub with **Add file → Upload files** (select all files, drag them in).
-> Keep the dataset (`.xlsx`) out of that upload.
+## Required generated files
 
-## What is inside
+The app needs the following files to show the full dashboard without rebuilding the pipeline:
+
+- `rfm_kmeans_customers.csv`
+- `churn_model_pipeline.joblib`
+- `churn_model_meta.json`
+- `churn_scores_current_customers.csv`
+- `sales_kpis.json`
+- `sales_monthly.csv`
+- `sales_products.csv`
+- `sales_countries.csv`
+
+Optional files enable extra charts and features:
+
+- `kmeans_model.joblib`, `kmeans_scaler.joblib`, `segment_names.json`
+- `churn_model_comparison.csv`, `churn_test_predictions.csv`, `churn_label_summary.csv`, `churn_feature_importance.csv`
+
+The saved model's scikit-learn version must match the version installed in `requirements.txt`. `build_results.bat` / `build_results.py` pins the version after a successful local build.
+
+## Run locally
+
+- Windows: double-click `run_app.bat` to launch the dashboard.
+- Or run `streamlit run app.py` in the project environment.
+
+## Project files
+
 | File | Purpose |
 |---|---|
-| `app.py` | Dashboard entry point (the "Main file" on Streamlit Cloud) |
-| `page_*.py` | The pages: Overview, Sales, Segmentation, Churn, Customer Prediction, Run Pipeline |
-| `pipeline.py` | The whole ML pipeline (cleaning → RFM → K-Means → churn label → models) |
-| `build_results.py` / `.bat` | Builds the result files from the dataset, no browser needed |
-| `publish_to_github.bat` | One-click upload to GitHub |
-| `config.py`, `data_loader.py`, `aggregates.py`, `segments.py`, `predict.py`, `charts.py`, `utils.py` | Helpers |
+| `app.py` | Streamlit dashboard entry point |
+| `page_*.py` | Overview, Sales, Segmentation, Churn, Customer Prediction, Pipeline/Deployment |
+| `pipeline.py` | Data cleaning, RFM, K-Means, churn labels and model training |
+| `build_results.py` / `.bat` | Builds results locally from the original dataset |
+| `config.py`, `data_loader.py`, `aggregates.py`, `segments.py`, `predict.py`, `charts.py`, `utils.py` | Supporting modules |
 
-## Result files created by step 1 (all small)
-`sales_kpis.json`, `sales_monthly.csv`, `sales_products.csv`, `sales_countries.csv`, `rfm_kmeans_customers.csv`,
-`kmeans_model.joblib`, `kmeans_scaler.joblib`, `segment_names.json`, `churn_model_pipeline.joblib`, `churn_model_meta.json`,
-`churn_scores_current_customers.csv`, `churn_model_comparison.csv`, `churn_test_predictions.csv`,
-`churn_label_summary.csv`, `churn_feature_importance.csv`.
-
-## The pages
-- **Customer Prediction:** type one customer's data (with ready-made examples), upload a transactions file for many customers, or pick an existing customer.
-- **Churn Prediction:** churn rate, confusion matrix, ROC / PR / calibration, model comparison vs a baseline, risk by segment, priority list (CSV).
+**Privacy note:** inspect generated customer-level CSV files before committing them to a public repository. The dashboard uses customer IDs in some files for lookup/prediction. Never publish the original dataset or raw transaction-level exports.
